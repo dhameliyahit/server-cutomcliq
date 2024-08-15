@@ -13,13 +13,21 @@ const app = express();
 // db connect
 const connectDB = async (DB_URL) => {
   try {
-    await mongoose.connect(DB_URL);
+    await mongoose.connect(DB_URL, {
+      useNewUrlParser: true,  // These options ensure compatibility with the latest MongoDB server versions
+      useUnifiedTopology: true,
+    });
     console.log("Database connected successfully");
+    console.log(DB_URL+"Success");
   } catch (error) {
-    console.error("Error while connecting to the database:");
+    console.error("Error while connecting to the database:", error.message);
+    process.exit(1);  // Exit the process with a failure code
+    console.log(DB_URL+"error");
   }
 };
-connectDB(DB_URL)
+
+connectDB(DB_URL);
+
 // end of DB conect ....
 
 app.use(express.json());
