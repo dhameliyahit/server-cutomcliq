@@ -26,7 +26,7 @@ app.use(express.json());
 app.use(cors());
 
 app.get("/",(req,res)=>{
-  res.end("<h1>CustomCliQ Backend</h1>");
+  res.end("<h1>CustomCliQ Backend Api's</h1>");
   console.log(__dirname);
 })
 
