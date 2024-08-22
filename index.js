@@ -24,63 +24,84 @@ connectDB(DB_URL)
 
 app.use(express.json());
 app.use(cors());
-app.use(formidable({
-  multiples: true 
-}));
 
 app.get("/",(req,res)=>{
   res.end("<h1>CustomCliQ Backend</h1>");
   console.log(__dirname);
 })
 
-app.post('/api/v1/data', formidable(),async(req, res) => {
-    try {
-      // Extracting fields from the form
-      const {
-        name, profession, companyName, contactNumber, email, whatsApp, location, googlereview
-      } =await req.fields;
-  
-      // Extracting files
-      const {
-        logo, profilePic,gImg
-      } =await req.files;
-     
-      const user =await new userModel({...req.fields})
-      
-      // console.log(gImgFiles);
-      if(logo){
-        user.logo.data = fs.readFileSync(logo.path)
-        user.logo.contentType = logo.type
-      }if(profilePic){
-        user.profilePic.data = fs.readFileSync(profilePic.path);
-        user.profilePic.contentType = profilePic.type
-      } 
+app.use(formidable({
+  maxFileSize: 10 * 1024 * 1024, // 10 MB limit for file uploads
+  multiples: true, // Allow multiple files
+}));
 
+app.post('/api/v1/data', async (req, res) => {
+  try {
+      const {
+          name, profession, companyName, contactNumber, email, whatsApp, location, googlereview
+      } = req.fields;
+
+      const {
+          logo, profilePic, gImg
+      } = req.files;
+
+      const user = new userModel({ ...req.fields });
+
+      // Process logo file
+      if (logo) {
+          const logoStream = fs.createReadStream(logo.path);
+          const logoChunks = [];
+          for await (const chunk of logoStream) {
+              logoChunks.push(chunk);
+          }
+          user.logo.data = Buffer.concat(logoChunks);
+          user.logo.contentType = logo.type;
+      }
+
+      // Process profilePic file
+      if (profilePic) {
+          const profilePicStream = fs.createReadStream(profilePic.path);
+          const profilePicChunks = [];
+          for await (const chunk of profilePicStream) {
+              profilePicChunks.push(chunk);
+          }
+          user.profilePic.data = Buffer.concat(profilePicChunks);
+          user.profilePic.contentType = profilePic.type;
+      }
+
+      // Process gImg files
       let gImgArray = [];
       if (gImg) {
-        if (Array.isArray(gImg)) {
-          gImgArray = gImg; // It's already an array
-        } else {
-          gImgArray = [gImg]; // It's a single file, so convert it to an array
-        }
-      }
-      if (gImgArray.length > 0) {
-        user.gImg = gImgArray.map(img => ({
-          data: fs.readFileSync(img.path),
-          contentType: img.type
-        }));
+          gImgArray = Array.isArray(gImg) ? gImg : [gImg]; // Ensure it's an array
       }
 
+      if (gImgArray.length > 0) {
+          user.gImg = await Promise.all(gImgArray.map(async img => {
+              const imgStream = fs.createReadStream(img.path);
+              const imgChunks = [];
+              for await (const chunk of imgStream) {
+                  imgChunks.push(chunk);
+              }
+              return {
+                  data: Buffer.concat(imgChunks),
+                  contentType: img.type
+              };
+          }));
+      }
+
+      // Save user data to the database
       await user.save();
+
       res.json({
-        success: true,
-        message:"Data Get Successfully",
-        user
+          success: true,
+          message: "Data Get Successfully",
+          user
       });
-    } catch (error) {
+
+  } catch (error) {
       console.error(error);
-      res.status(500).json({ success: false, error: 'An error occurred while processing your request. formdata!' });
-    }
+      res.status(500).json({ success: false, error: 'An error occurred while processing your request.' });
+  }
 });
 
 app.use("/api/v1",AdminRoute)
