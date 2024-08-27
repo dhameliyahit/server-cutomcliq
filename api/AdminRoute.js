@@ -1,11 +1,19 @@
 const express = require("express");
 const UserModel = require("../model/userModel.js")
 const router = express.Router();
-
+const NodeCache = require('node-cache');
 // get all data api
+
+const nodeCache = new NodeCache();
 router.get("/all/data",async(req,res)=>{
     try {
-        const user = await UserModel.find({}).select("-logo").select("-profilePic").select("-gImg");
+        let user;
+        if(nodeCache.has("userData")){
+            user = JSON.parse(nodeCache.get("userData"))
+        }else{
+            user = await UserModel.find({}).select("-logo").select("-profilePic").select("-gImg");
+            nodeCache.set("userData",JSON.stringify(user));
+        }
         res.status(200).send({
             success:true,
             message:"SuccessFully Get user data",
