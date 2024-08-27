@@ -13,10 +13,7 @@ const app = express();
 // db connect
 const connectDB = async (DB_URL) => {
   try {
-    await mongoose.connect(DB_URL, {
-      useNewUrlParser: true,  // These options ensure compatibility with the latest MongoDB server versions
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(DB_URL);
     console.log("Database connected successfully");
     console.log(DB_URL+"Success");
   } catch (error) {
