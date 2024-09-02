@@ -7,13 +7,7 @@ const NodeCache = require('node-cache');
 const nodeCache = new NodeCache();
 router.get("/all/data",async(req,res)=>{
     try {
-        let user;
-        if(nodeCache.has("userData")){
-            user = JSON.parse(nodeCache.get("userData"))
-        }else{
-            user = await UserModel.find({}).select("-logo").select("-profilePic").select("-gImg");
-            nodeCache.set("userData",JSON.stringify(user));
-        }
+        user = await UserModel.find({}).select("-logo").select("-profilePic").select("-gImg");
         res.status(200).send({
             success:true,
             message:"SuccessFully Get user data",
